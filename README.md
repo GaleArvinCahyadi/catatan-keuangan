@@ -1,1 +1,1 @@
-# aplikasi catatan keuangan
+# aplikasi-catatan-keuangan
