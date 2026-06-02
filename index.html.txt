@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTrack - Aplikasi Keuangan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="h-screen w-full flex justify-center bg-slate-100">
+
+    <!-- Mobile Wrapper -->
+    <div class="w-full max-w-md h-full bg-slate-50 shadow-2xl relative overflow-hidden flex flex-col">
+        
+        <!-- LOGIN VIEW -->
+        <div id="loginView" class="flex flex-col h-full justify-center px-8 z-10 fade-in">
+            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-blue-200">
+                <i class="ph ph-wallet text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">FinTrack</h1>
+            <p class="text-slate-500 mb-8">Masuk untuk mencatat keuanganmu.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                    <input type="text" id="username" class="w-full border border-slate-200 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Contoh: gale">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input type="password" id="pin" class="w-full border border-slate-200 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="••••••••">
+                </div>
+                <button id="btnLogin" onclick="doLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95 mt-4">
+                    Masuk
+                </button>
+            </div>
+            
+            <div class="mt-6 text-center text-sm">
+                <span class="text-slate-500">Belum punya akun?</span>
+                <button onclick="toggleAuthView('register')" class="text-blue-600 font-semibold hover:underline">Daftar Baru</button>
+            </div>
+
+            <p class="text-center text-xs text-slate-400 mt-8">Gunakan user: <b>gale</b> | pass: <b>gale1234</b></p>
+        </div>
+
+        <!-- REGISTER VIEW -->
+        <div id="registerView" class="hidden flex-col h-full justify-center px-8 z-10 fade-in">
+            <div class="w-16 h-16 bg-green-500 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-green-200">
+                <i class="ph ph-user-plus text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-slate-800 mb-2">Buat Akun</h1>
+            <p class="text-slate-500 mb-8">Daftar untuk mencatat keuanganmu.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nama Panggilan</label>
+                    <input type="text" id="regNama" class="w-full border border-slate-200 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Contoh: Budi">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                    <input type="text" id="regUsername" class="w-full border border-slate-200 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Username untuk login">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input type="password" id="regPin" class="w-full border border-slate-200 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Password akun">
+                </div>
+                <button id="btnRegister" onclick="doRegister()" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-green-200 transition-all active:scale-95 mt-4">
+                    Daftar Akun
+                </button>
+            </div>
+            
+            <div class="mt-6 text-center text-sm">
+                <span class="text-slate-500">Sudah punya akun?</span>
+                <button onclick="toggleAuthView('login')" class="text-green-600 font-semibold hover:underline">Masuk</button>
+            </div>
+        </div>
+
+        <!-- APP VIEW (DASHBOARD) -->
+        <div id="appView" class="hidden flex-col h-full fade-in relative">
+            
+            <!-- Wrapper untuk konten yang bisa di-scroll secara keseluruhan -->
+            <div class="flex-1 overflow-y-auto hide-scrollbar w-full pb-32 relative">
+                
+                <!-- Header -->
+                <div class="bg-blue-600 text-white px-6 pt-10 pb-6 rounded-b-[2rem] shadow-md z-10">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <p class="text-blue-100 text-sm">Halo,</p>
+                            <h2 class="text-xl font-bold" id="userNameDisplay">Pengguna</h2>
+                        </div>
+                        <button onclick="logout()" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 backdrop-blur-sm">
+                            <i class="ph ph-sign-out text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Total Saldo -->
+                    <p class="text-blue-100 text-sm mb-1">Total Saldo</p>
+                    <h1 class="text-4xl font-bold mb-6" id="totalBalanceDisplay">Rp 0</h1>
+                    
+                    <!-- Pemasukan & Pengeluaran -->
+                    <div class="flex gap-4">
+                        <div class="flex-1 bg-white/15 backdrop-blur-md rounded-2xl p-4 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-green-400/20 text-green-300 flex items-center justify-center">
+                                <i class="ph ph-arrow-down-left"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-blue-100">Pemasukan</p>
+                                <p class="font-semibold text-sm" id="totalIncomeDisplay">Rp 0</p>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-white/15 backdrop-blur-md rounded-2xl p-4 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-red-400/20 text-red-300 flex items-center justify-center">
+                                <i class="ph ph-arrow-up-right"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-blue-100">Pengeluaran</p>
+                                <p class="font-semibold text-sm" id="totalExpenseDisplay">Rp 0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Bawah -->
+                <div class="px-6 py-6">
+                    <h3 class="font-semibold text-slate-800 mb-4">Dompet Saya</h3>
+                    <div class="flex gap-4 overflow-x-auto hide-scrollbar pb-4" id="walletsContainer">
+                        <!-- Dompet dirender via JS -->
+                    </div>
+
+                    <!-- Rekap Bulanan & Pie Chart -->
+                    <div class="mt-4 mb-6">
+                        <h3 class="font-semibold text-slate-800 mb-4">Rekap Bulan Ini</h3>
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
+                            <div class="w-full max-w-[200px]">
+                                <canvas id="recapChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4 mt-4">
+                        <h3 class="font-semibold text-slate-800">Riwayat Terakhir</h3>
+                    </div>
+                    <div class="space-y-3" id="transactionsContainer">
+                        <!-- Transaksi dirender via JS -->
+                        <div class="text-center text-slate-400 py-4 text-sm">Memuat data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Action Buttons -->
+            <div class="absolute bottom-6 left-0 right-0 px-6 flex justify-center gap-4 z-20">
+                <button onclick="openTxModal('Pengeluaran')" class="flex-1 bg-white shadow-xl shadow-slate-200/50 py-3 rounded-2xl font-semibold text-red-500 border border-slate-100 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="ph ph-minus-circle text-xl"></i> Keluar
+                </button>
+                <button onclick="openTransferModal()" class="w-14 h-14 bg-slate-800 text-white rounded-full shadow-xl shadow-slate-300 flex items-center justify-center active:scale-95 transition-all flex-shrink-0">
+                    <i class="ph ph-arrows-left-right text-2xl"></i>
+                </button>
+                <button onclick="openTxModal('Pemasukan')" class="flex-1 bg-white shadow-xl shadow-slate-200/50 py-3 rounded-2xl font-semibold text-green-500 border border-slate-100 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="ph ph-plus-circle text-xl"></i> Masuk
+                </button>
+            </div>
+        </div>
+
+        <!-- MODAL TRANSAKSI -->
+        <div id="txModal" class="hidden absolute inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex flex-col justify-end fade-in">
+            <div class="bg-white w-full rounded-t-3xl p-6 shadow-2xl relative">
+                <button onclick="closeModals()" class="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                    <i class="ph ph-x"></i>
+                </button>
+                <h3 class="text-lg font-bold text-slate-800 mb-6" id="txModalTitle">Catat Transaksi</h3>
+                <input type="hidden" id="txType">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Nominal (Rp)</label>
+                        <input type="number" id="txAmount" class="w-full border-b-2 border-slate-200 py-2 text-2xl font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-colors" placeholder="0">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Dompet</label>
+                            <select id="txWallet" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Kategori</label>
+                            <select id="txCategory" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option>Makanan</option>
+                                <option>Transportasi</option>
+                                <option>Hiburan</option>
+                                <option>Tagihan</option>
+                                <option>Gaji</option>
+                                <option>Lainnya</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Deskripsi Singkat</label>
+                        <input type="text" id="txDesc" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cth: Beli makan siang">
+                    </div>
+                    <button id="btnSubmitTx" onclick="submitTransaction()" class="w-full bg-blue-600 text-white font-semibold py-3.5 rounded-xl mt-4 active:scale-95 transition-all">Simpan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL TRANSFER -->
+        <div id="transferModal" class="hidden absolute inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex flex-col justify-end fade-in">
+            <div class="bg-white w-full rounded-t-3xl p-6 shadow-2xl relative">
+                <button onclick="closeModals()" class="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                    <i class="ph ph-x"></i>
+                </button>
+                <h3 class="text-lg font-bold text-slate-800 mb-6">Pindah Saldo (Transfer)</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Nominal (Rp)</label>
+                        <input type="number" id="trAmount" class="w-full border-b-2 border-slate-200 py-2 text-2xl font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-colors" placeholder="0">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 items-center">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Dari</label>
+                            <select id="trFrom" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Ke</label>
+                            <select id="trTo" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Keterangan (Opsional)</label>
+                        <input type="text" id="trDesc" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cth: Tarik tunai ATM">
+                    </div>
+                    <button id="btnSubmitTr" onclick="submitTransfer()" class="w-full bg-slate-800 text-white font-semibold py-3.5 rounded-xl mt-4 active:scale-95 transition-all">Transfer</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* =========================================
+           LOGIKA APLIKASI UTAMA
+           ========================================= */
+        let currentUser = null;
+        let currentWallets = [];
+        let chartInstance = null; // Variabel chart
+
+        // Identifikasi Local Preview
+        const isLocalPreview = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:' || window.location.hostname === '' || window.location.hostname.includes('googleusercontent.com');
+
+        const defaultWalletNames = ["Tunai / Cash", "BRI", "BCA", "BTN", "Mandiri biasa", "Mandiri untuk TPG", "DANA / E-Wallet"];
+
+        // Mock Data
+        let mockUsers = [
+            { id_user: 'U001', username: 'gale', pin: 'gale1234', nama: 'Gale' },
+            { id_user: 'U002', username: 'irfan', pin: 'irfan1234', nama: 'Irfan' },
+            { id_user: 'U003', username: 'bimbel', pin: 'BNI123', nama: 'Bimbel' }
+        ];
+        
+        let mockWallets = [];
+        let wId = 1;
+        // Buatkan 6 dompet default untuk tiap user
+        mockUsers.forEach(u => {
+            defaultWalletNames.forEach(wName => {
+                mockWallets.push({
+                    id_dompet: 'W' + String(wId++).padStart(3, '0'),
+                    id_user: u.id_user,
+                    nama_dompet: wName,
+                    saldo: 0
+                });
+            });
+        });
+
+        let mockTx = [];
+
+        // Simulasi Server / Google Apps Script
+        const server = {
+            login: function(username, pin, callback) {
+                if(isLocalPreview) {
+                    setTimeout(() => {
+                        const user = mockUsers.find(u => u.username.toLowerCase() === username.toLowerCase() && u.pin === pin);
+                        if(user) callback({ success: true, id_user: user.id_user, nama: user.nama });
+                        else callback({ success: false, message: 'Username atau Password salah' });
+                    }, 500);
+                } else {
+                    google.script.run.withSuccessHandler(callback).login(username, pin);
+                }
+            },
+            register: function(payload, callback) {
+                if(isLocalPreview) {
+                    setTimeout(() => {
+                        if(mockUsers.find(u => u.username.toLowerCase() === payload.username.toLowerCase())) {
+                            callback({ success: false, message: 'Username sudah digunakan' });
+                            return;
+                        }
+                        const newUid = 'U' + Date.now();
+                        mockUsers.push({ id_user: newUid, username: payload.username, pin: payload.pin, nama: payload.nama });
+                        defaultWalletNames.forEach(wName => {
+                            mockWallets.push({ id_dompet: 'W' + String(wId++).padStart(3, '0'), id_user: newUid, nama_dompet: wName, saldo: 0 });
+                        });
+                        callback({ success: true, message: 'Akun berhasil dibuat!' });
+                    }, 500);
+                } else {
+                    google.script.run.withSuccessHandler(callback).registerUser(payload);
+                }
+            },
+            getAppData: function(uid, callback) {
+                if(isLocalPreview) {
+                    setTimeout(() => {
+                        let w = mockWallets.filter(x => x.id_user === uid);
+                        let t = mockTx.filter(x => x.id_user === uid).reverse();
+                        let bal = 0, inc = 0, exp = 0;
+                        w.forEach(x => bal += Number(x.saldo));
+                        t.forEach(x => { 
+                            if(x.jenis === 'Pemasukan') inc += Number(x.nominal); 
+                            if(x.jenis === 'Pengeluaran') exp += Number(x.nominal); 
+                        });
+                        callback({ wallets: w, transactions: t, summary: { totalBalance: bal, totalIncome: inc, totalExpense: exp } });
+                    }, 500);
+                } else {
+                    google.script.run.withSuccessHandler(callback).getAppData(uid);
+                }
+            },
+            addTransaction: function(uid, payload, callback) {
+                if(isLocalPreview) {
+                    setTimeout(() => {
+                        const newTx = {
+                            id_transaksi: 'T' + Date.now(),
+                            id_user: uid,
+                            tanggal: new Date().toISOString().split('T')[0],
+                            ...payload
+                        };
+                        mockTx.push(newTx);
+                        
+                        // Menambah / mengurangi nominal saldo sebagai angka Matematika
+                        if (payload.jenis === 'Pemasukan') {
+                            let w = mockWallets.find(x => x.id_user === uid && x.id_dompet === payload.dompet_asal);
+                            if(w) w.saldo = Number(w.saldo) + Number(payload.nominal);
+                        } else if (payload.jenis === 'Pengeluaran') {
+                            let w = mockWallets.find(x => x.id_user === uid && x.id_dompet === payload.dompet_asal);
+                            if(w) w.saldo = Number(w.saldo) - Number(payload.nominal);
+                        } else if (payload.jenis === 'Transfer') {
+                            let wFrom = mockWallets.find(x => x.id_user === uid && x.id_dompet === payload.dompet_asal);
+                            let wTo = mockWallets.find(x => x.id_user === uid && x.id_dompet === payload.dompet_tujuan);
+                            if(wFrom) wFrom.saldo = Number(wFrom.saldo) - Number(payload.nominal);
+                            if(wTo) wTo.saldo = Number(wTo.saldo) + Number(payload.nominal);
+                        }
+                        
+                        callback({ success: true });
+                    }, 500);
+                } else {
+                    google.script.run.withSuccessHandler(callback).addTransaction(uid, payload);
+                }
+            }
+        };
+
+        // Format Uang Rupiah
+        const formatRp = (angka) => {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        };
+
+        // UI Helpers (Toast Notification)
+        function showToast(msg, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-white text-sm font-medium shadow-lg z-50 transition-all transform translate-y-0 opacity-100 ${type === 'success' ? 'bg-slate-800' : 'bg-red-500'}`;
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('-translate-y-4', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Authentication
+        function doLogin() {
+            const user = document.getElementById('username').value;
+            const pin = document.getElementById('pin').value;
+            const btn = document.getElementById('btnLogin');
+            
+            if(!user || !pin) return showToast('Isi username dan Password', 'error');
+            
+            btn.innerHTML = 'Memeriksa...';
+            server.login(user, pin, function(res) {
+                btn.innerHTML = 'Masuk';
+                if(res.success) {
+                    currentUser = res;
+                    document.getElementById('loginView').classList.add('hidden');
+                    document.getElementById('appView').classList.remove('hidden');
+                    document.getElementById('appView').classList.add('flex');
+                    document.getElementById('userNameDisplay').innerText = res.nama;
+                    loadDashboard();
+                } else {
+                    showToast(res.message, 'error');
+                }
+            });
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('appView').classList.add('hidden');
+            document.getElementById('appView').classList.remove('flex');
+            document.getElementById('loginView').classList.remove('hidden');
+            document.getElementById('loginView').classList.add('flex');
+            document.getElementById('username').value = '';
+            document.getElementById('pin').value = '';
+        }
+
+        function toggleAuthView(view) {
+            if (view === 'register') {
+                document.getElementById('loginView').classList.add('hidden');
+                document.getElementById('loginView').classList.remove('flex');
+                document.getElementById('registerView').classList.remove('hidden');
+                document.getElementById('registerView').classList.add('flex');
+            } else {
+                document.getElementById('registerView').classList.add('hidden');
+                document.getElementById('registerView').classList.remove('flex');
+                document.getElementById('loginView').classList.remove('hidden');
+                document.getElementById('loginView').classList.add('flex');
+            }
+        }
+
+        function doRegister() {
+            const nama = document.getElementById('regNama').value;
+            const username = document.getElementById('regUsername').value;
+            const pin = document.getElementById('regPin').value;
+            const btn = document.getElementById('btnRegister');
+
+            if(!nama || !username || !pin) return showToast('Harap isi semua kolom', 'error');
+            
+            btn.innerHTML = 'Mendaftar...';
+            server.register({ nama, username, pin }, function(res) {
+                btn.innerHTML = 'Daftar Akun';
+                if(res.success) {
+                    showToast(res.message);
+                    toggleAuthView('login');
+                    document.getElementById('username').value = username;
+                    document.getElementById('pin').value = pin;
+                } else {
+                    showToast(res.message, 'error');
+                }
+            });
+        }
+
+        // Dashboard Rendering
+        function loadDashboard() {
+            server.getAppData(currentUser.id_user, function(data) {
+                currentWallets = data.wallets;
+                
+                // Render Summary
+                document.getElementById('totalBalanceDisplay').innerText = formatRp(data.summary.totalBalance);
+                document.getElementById('totalIncomeDisplay').innerText = formatRp(data.summary.totalIncome);
+                document.getElementById('totalExpenseDisplay').innerText = formatRp(data.summary.totalExpense);
+
+                // Render Wallets
+                const wCont = document.getElementById('walletsContainer');
+                wCont.innerHTML = '';
+                
+                // Update Select Options
+                const txW = document.getElementById('txWallet');
+                const trF = document.getElementById('trFrom');
+                const trT = document.getElementById('trTo');
+                txW.innerHTML = ''; trF.innerHTML = ''; trT.innerHTML = '';
+
+                data.wallets.forEach(w => {
+                    // Wallets UI
+                    wCont.innerHTML += `
+                        <div class="min-w-[140px] bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex-shrink-0">
+                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
+                                <i class="ph ph-wallet"></i>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-1">${w.nama_dompet}</p>
+                            <p class="font-semibold text-slate-800 text-sm">${formatRp(w.saldo)}</p>
+                        </div>
+                    `;
+                    
+                    // Options UI
+                    const opt = `<option value="${w.id_dompet}">${w.nama_dompet}</option>`;
+                    txW.innerHTML += opt;
+                    trF.innerHTML += opt;
+                    trT.innerHTML += opt;
+                });
+
+                // Render Transactions
+                const tCont = document.getElementById('transactionsContainer');
+                tCont.innerHTML = '';
+
+                // Variabel untuk menghitung rekap chart bulan ini
+                const currentMonth = new Date().toISOString().slice(0, 7); // Format: YYYY-MM
+                let monthInc = 0;
+                let monthExp = 0;
+
+                if(data.transactions.length === 0) {
+                    tCont.innerHTML = '<p class="text-center text-slate-400 py-4 text-sm">Belum ada transaksi.</p>';
+                } else {
+                    data.transactions.forEach(tx => {
+                        const isIncome = tx.jenis === 'Pemasukan';
+                        const isTransfer = tx.jenis === 'Transfer';
+                        let icon = isIncome ? 'ph-arrow-down-left' : (isTransfer ? 'ph-arrows-left-right' : 'ph-arrow-up-right');
+                        let colorClass = isIncome ? 'text-green-500 bg-green-50' : (isTransfer ? 'text-blue-500 bg-blue-50' : 'text-red-500 bg-red-50');
+                        let sign = isIncome ? '+' : (isTransfer ? '' : '-');
+                        
+                        let walletName = '';
+                        if(isTransfer) {
+                            let wF = currentWallets.find(w => w.id_dompet === tx.dompet_asal)?.nama_dompet || '-';
+                            let wT = currentWallets.find(w => w.id_dompet === tx.dompet_tujuan)?.nama_dompet || '-';
+                            walletName = `${wF} → ${wT}`;
+                        } else {
+                            walletName = currentWallets.find(w => w.id_dompet === tx.dompet_asal)?.nama_dompet || '-';
+                        }
+
+                        // Hitung transaksi khusus bulan berjalan
+                        if (tx.tanggal.startsWith(currentMonth)) {
+                            if (isIncome) monthInc += Number(tx.nominal);
+                            if (tx.jenis === 'Pengeluaran') monthExp += Number(tx.nominal);
+                        }
+
+                        tCont.innerHTML += `
+                            <div class="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}">
+                                    <i class="ph ${icon} text-lg"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-semibold text-slate-800 text-sm">${tx.kategori}</p>
+                                    <p class="text-xs text-slate-500">${walletName} • ${tx.tanggal}</p>
+                                    ${tx.deskripsi ? `<p class="text-xs text-slate-400 mt-0.5">${tx.deskripsi}</p>` : ''}
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-sm ${isIncome ? 'text-green-500' : (isTransfer ? 'text-slate-700' : 'text-slate-800')}">
+                                        ${sign}${formatRp(tx.nominal)}
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // Render Pie Chart Rekapan
+                const ctx = document.getElementById('recapChart').getContext('2d');
+                if (chartInstance) chartInstance.destroy(); // Hapus chart lama jika ada
+                
+                if (monthInc === 0 && monthExp === 0) {
+                    chartInstance = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Belum ada transaksi bulan ini'],
+                            datasets: [{ data: [1], backgroundColor: ['#f1f5f9'] }] // Warna abu-abu kosong
+                        },
+                        options: { plugins: { tooltip: { enabled: false }, legend: { position: 'bottom' } } }
+                    });
+                } else {
+                    chartInstance = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Pemasukan', 'Pengeluaran'],
+                            datasets: [{
+                                data: [monthInc, monthExp],
+                                backgroundColor: ['#22c55e', '#ef4444'], // Hijau dan Merah
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }
+                        }
+                    });
+                }
+            });
+        }
+
+        // Modals & Submissions
+        function openTxModal(type) {
+            document.getElementById('txModal').classList.remove('hidden');
+            document.getElementById('txModal').classList.add('flex');
+            document.getElementById('txType').value = type;
+            document.getElementById('txModalTitle').innerText = `Catat ${type}`;
+        }
+
+        function openTransferModal() {
+            document.getElementById('transferModal').classList.remove('hidden');
+            document.getElementById('transferModal').classList.add('flex');
+        }
+
+        function closeModals() {
+            document.getElementById('txModal').classList.add('hidden');
+            document.getElementById('txModal').classList.remove('flex');
+            document.getElementById('transferModal').classList.add('hidden');
+            document.getElementById('transferModal').classList.remove('flex');
+            
+            // Reset input saat ditutup
+            document.getElementById('txAmount').value = '';
+            document.getElementById('txDesc').value = '';
+            document.getElementById('trAmount').value = '';
+            document.getElementById('trDesc').value = '';
+        }
+
+        function submitTransaction() {
+            const nominal = Number(document.getElementById('txAmount').value);
+            if(!nominal || nominal <= 0) return showToast('Masukkan nominal yang valid', 'error');
+
+            const payload = {
+                jenis: document.getElementById('txType').value,
+                nominal: nominal,
+                dompet_asal: document.getElementById('txWallet').value,
+                kategori: document.getElementById('txCategory').value,
+                deskripsi: document.getElementById('txDesc').value
+            };
+
+            const btn = document.getElementById('btnSubmitTx');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Menyimpan...';
+            
+            server.addTransaction(currentUser.id_user, payload, function(res) {
+                btn.innerHTML = originalText;
+                if(res.success) {
+                    closeModals();
+                    showToast('Transaksi berhasil dicatat!');
+                    loadDashboard();
+                } else {
+                    showToast('Gagal menyimpan transaksi', 'error');
+                }
+            });
+        }
+
+        function submitTransfer() {
+            const nominal = Number(document.getElementById('trAmount').value);
+            const fromW = document.getElementById('trFrom').value;
+            const toW = document.getElementById('trTo').value;
+
+            if(!nominal || nominal <= 0) return showToast('Masukkan nominal yang valid', 'error');
+            if(fromW === toW) return showToast('Dompet asal dan tujuan tidak boleh sama', 'error');
+
+            const payload = {
+                jenis: 'Transfer',
+                nominal: nominal,
+                dompet_asal: fromW,
+                dompet_tujuan: toW,
+                kategori: 'Transfer',
+                deskripsi: document.getElementById('trDesc').value
+            };
+
+            const btn = document.getElementById('btnSubmitTr');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Memproses...';
+            
+            server.addTransaction(currentUser.id_user, payload, function(res) {
+                btn.innerHTML = originalText;
+                if(res.success) {
+                    closeModals();
+                    showToast('Transfer berhasil!');
+                    loadDashboard();
+                } else {
+                    showToast('Gagal memproses transfer', 'error');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
